@@ -2,8 +2,8 @@
 $ServerName = Read-Host "Enter your SQL Server name (e.g., localhost\SQLEXPRESS)"
 $DatabaseName = Read-Host "Enter your Database name"
 
-# Define Log File Path
-$LogFile = "C:\ProcedureChangeHistory.txt"
+# Prompt user for log file path
+$LogFile = Read-Host "Enter the full path for saving the log file (e.g., C:\Logs\ProcedureChangeHistory.txt)"
 
 # SQL Query to Retrieve Stored Procedure Change History
 $Query = @"
