@@ -3,18 +3,36 @@ $ServerName = Read-Host "Enter your SQL Server name (e.g., localhost\SQLEXPRESS)
 $DatabaseName = Read-Host "Enter your Database name"
 
 # Define Log File Path
-$LogFile = "C:\ProcedureChangeHistory.txt"  # Change this path if needed
+$LogFile = "C:\ProcedureChangeHistory.txt"
 
-# SQL Query to Retrieve Full Stored Procedure Modification History
+# SQL Query to Retrieve Stored Procedure Modification History
 $Query = @"
-SELECT 
-    p.name AS ProcedureName, 
-    p.create_date AS CreatedDate,
-    p.modify_date AS LastModifiedDate,
-    dp.name AS ModifiedBy
-FROM sys.procedures p
-LEFT JOIN sys.database_principals dp ON p.principal_id = dp.principal_id
-ORDER BY p.modify_date DESC;
+WITH ProcChanges AS (
+    SELECT 
+        p.name AS ProcedureName,
+        p.create_date AS CreatedDate,
+        p.modify_date AS LastModifiedDate,
+        dp.name AS ModifiedBy
+    FROM sys.procedures p
+    LEFT JOIN sys.database_principals dp ON p.principal_id = dp.principal_id
+),
+DefaultTrace AS (
+    SELECT 
+        te.name AS EventName,
+        t.DatabaseName,
+        t.ObjectName AS ProcedureName,
+        t.StartTime AS EventTime,
+        t.LoginName AS ModifiedBy
+    FROM sys.fn_trace_gettable((SELECT path FROM sys.traces WHERE is_default = 1), DEFAULT) t
+    JOIN sys.trace_events te ON t.EventClass = te.trace_event_id
+    WHERE te.name IN ('Object:Altered', 'Object:Created') 
+    AND t.ObjectType = 8272 -- 8272 = Stored Procedure
+)
+SELECT * FROM ProcChanges
+UNION ALL
+SELECT '---' AS ProcedureName, DatabaseName, EventTime AS LastModifiedDate, ModifiedBy 
+FROM DefaultTrace
+ORDER BY LastModifiedDate DESC;
 "@
 
 # Execute SQL Query using Invoke-Sqlcmd
@@ -26,7 +44,7 @@ try {
     
     Import-Module SqlServer
     
-    # Execute the query and store results
+    # Execute the query and store the results
     $ChangeLogs = Invoke-Sqlcmd -ServerInstance $ServerName -Database $DatabaseName -Query $Query
 
     # Output to Console
