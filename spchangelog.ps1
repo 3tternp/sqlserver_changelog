@@ -44,7 +44,7 @@ try {
     
     Import-Module SqlServer
     
-    # Execute the query and store the results
+    # Execute the query and store results
     $ChangeLogs = Invoke-Sqlcmd -ServerInstance $ServerName -Database $DatabaseName -Query $Query
 
     # Output to Console
