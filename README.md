@@ -6,4 +6,4 @@ _Set-ExecutionPolicy Unrestricted -Scope Process_
 
 Now run the script in Powershell terminal as following 
 
-./Get-SPChangeLog.ps1
+./spchangelog.ps1
