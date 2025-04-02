@@ -2,16 +2,19 @@
 $ServerName = Read-Host "Enter your SQL Server name (e.g., localhost\SQLEXPRESS)"
 $DatabaseName = Read-Host "Enter your Database name"
 
-# Define the Log File Path
-$LogFile = "C:\ProcedureChangeLog.txt"  # Change this path if needed
+# Define Log File Path
+$LogFile = "C:\ProcedureChangeHistory.txt"  # Change this path if needed
 
-# SQL Query to Retrieve Stored Procedure Change Logs
+# SQL Query to Retrieve Full Stored Procedure Modification History
 $Query = @"
 SELECT 
-    name AS ProcedureName, 
-    modify_date AS LastModifiedDate
-FROM sys.procedures
-ORDER BY modify_date DESC;
+    p.name AS ProcedureName, 
+    p.create_date AS CreatedDate,
+    p.modify_date AS LastModifiedDate,
+    dp.name AS ModifiedBy
+FROM sys.procedures p
+LEFT JOIN sys.database_principals dp ON p.principal_id = dp.principal_id
+ORDER BY p.modify_date DESC;
 "@
 
 # Execute SQL Query using Invoke-Sqlcmd
@@ -27,13 +30,13 @@ try {
     $ChangeLogs = Invoke-Sqlcmd -ServerInstance $ServerName -Database $DatabaseName -Query $Query
 
     # Output to Console
-    Write-Output "Stored Procedure Change Logs:"
+    Write-Output "Stored Procedure Change History:"
     Write-Output $ChangeLogs
 
     # Log to File
     $ChangeLogs | Out-File -FilePath $LogFile -Encoding utf8
-    Write-Output "Change Log saved to: $LogFile"
+    Write-Output "Change History saved to: $LogFile"
 }
 catch {
-    Write-Error "Error fetching stored procedure logs: $_"
+    Write-Error "Error fetching stored procedure change history: $_"
 }
